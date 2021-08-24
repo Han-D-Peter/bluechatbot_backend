@@ -4,8 +4,6 @@
 *.pyc
 *.pyo
 env/
-venv/
-.venv/
 env*
 dist/
 build/
@@ -35,5 +33,4 @@ htmlcov/
 [Ll]ocal
 [Ss]cripts
 pyvenv.cfg
-.venv
 pip-selfcheck.json
