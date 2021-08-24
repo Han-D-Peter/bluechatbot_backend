@@ -34,3 +34,6 @@ htmlcov/
 [Ss]cripts
 pyvenv.cfg
 pip-selfcheck.json
+virtualenv
+__pycache__
+venv
