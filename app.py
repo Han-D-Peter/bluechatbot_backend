@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, abort
+from flask import Flask, json, request, jsonify, abort
 import time
 import requests
 import asyncio
@@ -17,8 +17,6 @@ app.debug = True
 
 db = SQLAlchemy(app)
 
-# db = psycopg2.connect(host='localhost', dbname='kakao-flask', user='jaesunghan', password='1234', port=5432)
-# cursor = db.cursor()
 
 class Customer(db.Model):
     __tablename__="Customer"
@@ -112,9 +110,9 @@ async def waiting(body):
         if wait_count > 4:
             global count_start
             count_start = False
-            message_to_model = "".join(message_list)
+            message_to_model = jsonify("".join(message_list))
             # API로 리턴 받은 대답을 리턴해줌
-            imotion, words, reply = await requests.post('model/api/', message_to_model)
+            imotion, words, reply = await requests.post('/AI/sendMessage/', message_to_model)
             # 대화 내용과 결과를 DB에 저장
             text_from_chat(body, imotion, words)
 
@@ -123,7 +121,7 @@ async def waiting(body):
             return reply
 
 
-@app.route('/api',methods=['POST'])
+@app.route('/backend/sendMessage',methods=['POST'])
 async def get_massages_from_chatbot():
     global count_start
     global wait_count
@@ -144,6 +142,54 @@ async def get_massages_from_chatbot():
         return result
 
     return "loading..."
+
+
+
+
+@app.route('/frontend/getUsers/')
+def request_users_data():
+    customers = db.session.query(Customer).all()
+    data = []
+    for i in customers:
+        json = {"id": i.id, "kakao_id": i.kakao_id}
+        data.append(json)
+    return jsonify(data)
+
+@app.route('/frontend/getUser/<int:id>/')
+def request_user_data(id):
+    customer = db.session.query(Customer).filter(Customer.kakao_id == id).one()
+    data = []
+    for date in customer.datas:
+        json = {"id": id, "kakao_id":customer.kakao_id,"date":date.chat_open_date}
+        data.append(json)
+    return jsonify(data)
+
+@app.route('/frontend/getUser/<int:id>/getDate/<date>/')
+def request_date_data(id, date):
+    imotions = {}
+    words = {}
+
+    customer = db.session.query(Customer).filter(Customer.kakao_id == id).one()
+    date = db.session.query(ChatList).with_parent(customer).filter(ChatList.chat_open_date == date).one()
+
+    for message in date.messages:
+        try:
+            imotions[str(message.imotion)] += 1
+        except:
+            imotions[str(message.imotion)] = 1
+        for word in message.words:
+            try:
+                words[word] +=1
+            except:
+                words[word] = 1
+    def f1(x):
+        return x[0]
+
+    sorted_imotions = sorted(imotions.items(), key=f1, reverse=True)
+    sorted_words = sorted(words.items(), key=f1, reverse=True)
+
+    return jsonify({"imotion_rank":sorted_imotions,"word_rank":sorted_words})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
