@@ -8,11 +8,20 @@ from flask_restful import Resource, Api
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, TEXT, INTEGER
 from sqlalchemy.sql.sqltypes import ARRAY
+from dotenv import load_dotenv
 import time
+import os
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://jaesunghan:1234@localhost/kakao-flask"
+load_dotenv()
+
+POSTGRES_ID=os.getenv("POSTGRES_ID")
+POSTGRES_PW=os.getenv("POSTGRES_PW")
+
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{POSTGRES_ID}:{POSTGRES_PW}@localhost/kakao-flask"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.debug = True
 
 db = SQLAlchemy(app)
@@ -120,7 +129,7 @@ async def waiting(body):
             message_list = []
             return reply
 
-
+# 카톡으로부터 요청
 @app.route('/backend/sendMessage',methods=['POST'])
 async def get_massages_from_chatbot():
     global count_start
@@ -145,7 +154,7 @@ async def get_massages_from_chatbot():
 
 
 
-
+# 프론트로부터 요청
 @app.route('/frontend/getUsers/')
 def request_users_data():
     customers = db.session.query(Customer).all()
